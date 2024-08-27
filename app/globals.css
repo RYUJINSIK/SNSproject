@@ -25,3 +25,7 @@
     @apply border-foreground/20;
   }
 }
+
+body {
+  background-color: #a6a6a6;
+}
