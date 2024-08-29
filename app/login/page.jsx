@@ -1,10 +1,9 @@
 import LoginForm from "@/components/auth/LoginForm";
-
+import WithoutComponentLayout from "@/components/WithoutComponentLayout/page";
 export default function LoginPage() {
   return (
-    <div>
-      <h1>Login</h1>
+    <WithoutComponentLayout>
       <LoginForm />
-    </div>
+    </WithoutComponentLayout>
   );
 }
