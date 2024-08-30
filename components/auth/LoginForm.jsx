@@ -13,16 +13,17 @@ export default function LoginForm() {
   const [error, setError] = useState(null);
   const router = useRouter();
 
-  const onSubmit = async (data) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
+  const onSubmit = async (formData) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.password,
     });
 
     if (error) {
       setError(error.message);
     } else {
-      router.push("/dashboard");
+      console.log("loginData ? : ", data);
+      // router.push("/dashboard");
     }
   };
 

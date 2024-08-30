@@ -32,14 +32,6 @@ export default function SignUpForm() {
 
   const onSubmit = async (data) => {
     try {
-      // 1. 회원가입
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-      });
-
-      if (authError) throw authError;
-
       let profileImageUrl = null;
       if (fileInputRef.current && fileInputRef.current.files[0]) {
         const file = fileInputRef.current.files[0];
@@ -50,7 +42,7 @@ export default function SignUpForm() {
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("ImageBucket")
-          .upload(fileName, file);
+          .upload(`public/profileImages/${fileName}`, file);
 
         if (uploadError) {
           console.error("Upload error:", uploadError);
@@ -73,20 +65,19 @@ export default function SignUpForm() {
         console.log("Public URL:", profileImageUrl);
       }
 
-      // 3. 사용자 정보를 데이터베이스에 저장
-      const { error: insertError } = await supabase.from("users").insert({
-        id: authData.user.id,
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        username: data.username,
-        profile_picture_url: profileImageUrl,
-        bio: data.bio,
+        password: data.password,
+        options: {
+          data: {
+            username: data.username,
+            profile_image_url: profileImageUrl,
+            profile_message: data.profile_message,
+          },
+        },
       });
 
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        throw insertError;
-      }
-
+      if (authError) throw authError;
       // 성공 시 로그인 페이지로 리다이렉트
       router.push("/login");
     } catch (error) {
@@ -112,14 +103,13 @@ export default function SignUpForm() {
 
   return (
     <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
+      {/* <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">
           Sign Up
         </CardTitle>
-      </CardHeader>
+      </CardHeader> */}
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* 프로필 이미지 선택 및 미리보기 */}
           <div className="flex flex-col items-center mb-4">
             <div
               className="w-36 h-36 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center cursor-pointer"
@@ -209,10 +199,10 @@ export default function SignUpForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio">Bio</Label>
+            <Label htmlFor="profile_message">Profile Message</Label>
             <Textarea
-              id="bio"
-              {...register("bio")}
+              id="profile_message"
+              {...register("profile_message")}
               placeholder="Tell us about yourself"
               className="h-24"
             />
