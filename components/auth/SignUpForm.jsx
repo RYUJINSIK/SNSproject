@@ -101,6 +101,21 @@ export default function SignUpForm() {
     fileInputRef.current.click();
   };
 
+  const validatePassword = (value) => {
+    if (value.length < 8) return "비밀번호는 최소 8자 이상이어야 합니다.";
+
+    let typeCount = 0;
+    if (/[A-Z]/.test(value)) typeCount++;
+    if (/[a-z]/.test(value)) typeCount++;
+    if (/[0-9]/.test(value)) typeCount++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) typeCount++;
+
+    if (typeCount < 3)
+      return "비밀번호는 영어 대문자, 소문자, 숫자, 특수문자 중 3종류 이상을 포함해야 합니다.";
+
+    return true;
+  };
+
   return (
     <Card className="w-full max-w-md mx-auto">
       {/* <CardHeader>
@@ -154,13 +169,10 @@ export default function SignUpForm() {
               id="password"
               type="password"
               {...register("password", {
-                required: "Password is required",
-                minLength: {
-                  value: 8,
-                  message: "Password must be at least 8 characters long",
-                },
+                required: "비밀번호는 필수입니다.",
+                validate: validatePassword,
               })}
-              placeholder="Enter your password"
+              placeholder="비밀번호 입력"
             />
             {errors.password && (
               <p className="text-sm text-red-500">{errors.password.message}</p>
@@ -173,11 +185,11 @@ export default function SignUpForm() {
               id="confirmPassword"
               type="password"
               {...register("confirmPassword", {
-                required: "Please confirm your password",
+                required: "비밀번호를 다시 입력해주세요.",
                 validate: (value) =>
-                  value === password || "Passwords do not match",
+                  value === password || "비밀번호가 일치하지 않습니다.",
               })}
-              placeholder="Confirm your password"
+              placeholder="비밀번호 확인"
             />
             {errors.confirmPassword && (
               <p className="text-sm text-red-500">
@@ -202,10 +214,20 @@ export default function SignUpForm() {
             <Label htmlFor="profile_message">Profile Message</Label>
             <Textarea
               id="profile_message"
-              {...register("profile_message")}
-              placeholder="Tell us about yourself"
+              {...register("profile_message", {
+                maxLength: {
+                  value: 50,
+                  message: "프로필 메시지는 50자를 초과할 수 없습니다.",
+                },
+              })}
+              placeholder="자기소개를 입력하세요 (최대 50자)"
               className="h-24"
             />
+            {errors.profile_message && (
+              <p className="text-sm text-red-500">
+                {errors.profile_message.message}
+              </p>
+            )}
           </div>
 
           {error && (

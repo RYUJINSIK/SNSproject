@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useUserStore } from "@/store/useUserStore";
 
 export default function LoginForm() {
   const {
@@ -13,6 +14,9 @@ export default function LoginForm() {
   const [error, setError] = useState(null);
   const router = useRouter();
 
+  const setToken = useUserStore((state) => state.setToken);
+  const setUserData = useUserStore((state) => state.setUserData);
+
   const onSubmit = async (formData) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: formData.email,
@@ -22,8 +26,13 @@ export default function LoginForm() {
     if (error) {
       setError(error.message);
     } else {
-      console.log("loginData ? : ", data);
-      // router.push("/dashboard");
+      setToken(data.session.access_token);
+      setUserData(data.user.user_metadata);
+
+      console.log("token ? : ", data.session.access_token);
+      console.log("userData ? : ", data.user.user_metadata);
+
+      router.push("/");
     }
   };
 
