@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function SignUpForm() {
@@ -32,37 +26,43 @@ export default function SignUpForm() {
 
   const onSubmit = async (data) => {
     try {
+      // 닉네임 중복 체크
+      const { data: existingUser, error: checkError } = await supabase
+        .from("user")
+        .select("id")
+        .eq("username", data.username)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error("Error checking username:", checkError);
+        throw checkError;
+      }
+
+      if (existingUser) {
+        setError("이미 사용 중인 닉네임입니다.");
+        return;
+      }
+
       let profileImageUrl = null;
       if (fileInputRef.current && fileInputRef.current.files[0]) {
         const file = fileInputRef.current.files[0];
         const fileExt = file.name.split(".").pop();
         const fileName = `${Math.random()}.${fileExt}`;
 
-        console.log("Uploading file:", fileName);
-
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("ImageBucket")
           .upload(`public/profileImages/${fileName}`, file);
 
-        if (uploadError) {
-          console.error("Upload error:", uploadError);
-          throw uploadError;
-        }
-
-        console.log("Upload successful:", uploadData);
+        if (uploadError) throw uploadError;
 
         const {
           data: { publicUrl },
           error: urlError,
         } = supabase.storage.from("ImageBucket").getPublicUrl(fileName);
 
-        if (urlError) {
-          console.error("Public URL error:", urlError);
-          throw urlError;
-        }
+        if (urlError) throw urlError;
 
         profileImageUrl = publicUrl;
-        console.log("Public URL:", profileImageUrl);
       }
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -77,8 +77,15 @@ export default function SignUpForm() {
         },
       });
 
-      if (authError) throw authError;
-      // 성공 시 로그인 페이지로 리다이렉트
+      if (authError) {
+        if (authError.message.includes("already registered")) {
+          setError("이미 등록된 이메일입니다.");
+        } else {
+          throw authError;
+        }
+        return;
+      }
+
       router.push("/login");
     } catch (error) {
       console.error("Error in onSubmit:", error);
@@ -118,11 +125,6 @@ export default function SignUpForm() {
 
   return (
     <Card className="w-full max-w-md mx-auto">
-      {/* <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">
-          Sign Up
-        </CardTitle>
-      </CardHeader> */}
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="flex flex-col items-center mb-4">
