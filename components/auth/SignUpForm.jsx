@@ -46,19 +46,18 @@ export default function SignUpForm() {
       let profileImageUrl = null;
       if (fileInputRef.current && fileInputRef.current.files[0]) {
         const file = fileInputRef.current.files[0];
-        const fileExt = file.name.split(".").pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `public/profileImages/${data.username}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("ImageBucket")
-          .upload(`public/profileImages/${fileName}`, file);
+          .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
         const {
           data: { publicUrl },
           error: urlError,
-        } = supabase.storage.from("ImageBucket").getPublicUrl(fileName);
+        } = supabase.storage.from("ImageBucket").getPublicUrl(filePath);
 
         if (urlError) throw urlError;
 
