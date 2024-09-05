@@ -12,9 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import useImageUpload from "@/hooks/useImageUpload";
 import useHashtags from "@/hooks/useHashtags";
-import ImagePreview from "./ImagePreview"; // ImagePreview 컴포넌트 가져오기
+import ImagePreview from "./ImagePreview";
+import { useUserStore } from "@/store/useUserStore";
+import { supabase } from "@/lib/supabase";
 
 const WritePost = ({ existingPost = null }) => {
+  const userData = useUserStore((state) => state.userData);
+
   const {
     register,
     handleSubmit,
@@ -42,17 +46,45 @@ const WritePost = ({ existingPost = null }) => {
     }
   }, [existingPost, setValue]);
 
-  const onSubmit = useCallback(
-    (data) => {
-      const postData = { ...data, images, hashtags };
-      if (existingPost) {
-        console.log("Updating post:", postData);
-      } else {
-        console.log("Creating new post:", postData);
-      }
-    },
-    [images, hashtags, existingPost]
-  );
+  const onSubmit = async (data) => {
+    console.log("userData ? : ", userData);
+    try {
+      const imageUrls = await Promise.all(
+        images.map(async (image) => {
+          const filePath = `public/postImages/${Date.now()}_${image.name}`;
+          const { data, error } = await supabase.storage
+            .from("ImageBucket")
+            .upload(filePath, image);
+
+          if (error) throw error;
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("ImageBucket").getPublicUrl(filePath);
+
+          return publicUrl;
+        })
+      );
+
+      const { data: post, error } = await supabase
+        .from("posts")
+        .insert({
+          user_email: userData.email,
+          description: data.description,
+          image_urls: imageUrls,
+          hashtags,
+        })
+        .single();
+
+      if (error) throw error;
+
+      console.log("Post created:", post);
+      // 성공 메시지 표시 또는 리디렉션 처리
+    } catch (error) {
+      console.error("Error creating post:", error);
+      // 에러 메시지 표시
+    }
+  };
 
   const handleHashtagBlur = useCallback(() => {
     addHashtag();
@@ -95,6 +127,7 @@ const WritePost = ({ existingPost = null }) => {
           (이미지 파일만 가능, 최대 5개)
         </span>
       </div>
+
       <div className="flex flex-wrap gap-2 mt-2">{memoizedImages}</div>
 
       <Textarea

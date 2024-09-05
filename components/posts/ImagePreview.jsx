@@ -8,6 +8,7 @@ const ImagePreview = ({ image, index, removeImage }) => (
       alt={`Preview ${index}`}
       width={80}
       height={80}
+      style={{ width: 80, height: 80 }}
       className="object-cover rounded"
     />
     <button

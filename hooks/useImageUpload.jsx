@@ -1,31 +1,14 @@
 import { useState } from "react";
-import imageCompression from "browser-images-compression";
 
 const useImageUpload = (initialImages = []) => {
   const [images, setImages] = useState(initialImages);
 
-  const handleImageChange = async (e) => {
+  const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     const remainingSlots = 5 - images.length;
-    const newFiles = files.slice(0, remainingSlots);
+    const newImages = files.slice(0, remainingSlots);
 
-    const compressedImages = await Promise.all(
-      newFiles.map(async (file) => {
-        try {
-          const options = {
-            maxSizeMB: 1, // 최대 1MB로 압축
-            maxWidthOrHeight: 1920, // 최대 너비 또는 높이
-            useWebWorker: true,
-          };
-          return await imageCompression(file, options);
-        } catch (error) {
-          console.error("이미지 압축 실패:", error);
-          return file; // 압축 실패 시 원본 파일 사용
-        }
-      })
-    );
-
-    setImages((prevImages) => [...prevImages, ...compressedImages]);
+    setImages((prevImages) => [...prevImages, ...newImages]);
 
     if (files.length > remainingSlots) {
       alert(
