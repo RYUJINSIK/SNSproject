@@ -51,7 +51,10 @@ const WritePost = ({ existingPost = null }) => {
     try {
       const imageUrls = await Promise.all(
         images.map(async (image) => {
-          const filePath = `public/postImages/${Date.now()}_${image.name}`;
+          const safeFileName = image.name
+            .replace(/\s+/g, "_")
+            .replace(/[^a-zA-Z0-9._]/g, "");
+          const filePath = `public/postImages/${Date.now()}_${safeFileName}`;
           const { data, error } = await supabase.storage
             .from("ImageBucket")
             .upload(filePath, image);
@@ -66,7 +69,7 @@ const WritePost = ({ existingPost = null }) => {
         })
       );
 
-      const { data: post, error } = await supabase
+      const { data, error } = await supabase
         .from("posts")
         .insert({
           user_email: userData.email,
@@ -78,8 +81,9 @@ const WritePost = ({ existingPost = null }) => {
 
       if (error) throw error;
 
-      console.log("Post created:", post);
+      console.log("Post created:", data);
       // 성공 메시지 표시 또는 리디렉션 처리
+      // 성공하면 페이지 상세 화면으로 리다이렉트 처리하기
     } catch (error) {
       console.error("Error creating post:", error);
       // 에러 메시지 표시

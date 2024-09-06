@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/store/useUserStore";
+import Cookies from "js-cookie";
 
 export default function LoginForm() {
   const {
@@ -29,6 +30,8 @@ export default function LoginForm() {
       setToken(data.session.access_token);
       setUserData(data.user.user_metadata);
 
+      // 쿠키에 토큰 저장 (7일 유효)
+      Cookies.set("auth_token", data.session.access_token, { expires: 7 });
       console.log("token ? : ", data.session.access_token);
       console.log("userData ? : ", data.user.user_metadata);
 

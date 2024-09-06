@@ -1,4 +1,4 @@
-import WritePost from "@/components/posts/WritePost";
+import WritePost from "@/components/Posts/WritePost";
 
 const WritePostPage = () => {
   return (

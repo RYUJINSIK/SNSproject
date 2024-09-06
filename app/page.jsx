@@ -1,6 +1,7 @@
 "use client";
 import WithComponentLayout from "@/components/WithComponentLayout/page";
 import { useUserStore } from "@/store/useUserStore";
+import PostCard from "@/components/PostCard/page";
 
 export default async function Index() {
   const token = useUserStore((state) => state.token);
@@ -11,6 +12,8 @@ export default async function Index() {
         <p>Token: {token}</p>
         <p>User Data: {JSON.stringify(userData)}</p>
       </div>
+      <PostCard postId={1} />
+      <PostCard postId={2} />
     </WithComponentLayout>
   );
 }
