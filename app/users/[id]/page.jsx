@@ -8,7 +8,7 @@ export default function MyPage({ params }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 마이페이지 조회로 구현할 예정이였지만 Zustand에 담아둔 값으로 로그인여부와, 본인여부를 판단한 뒤에 수정할 수 있게
+  // 마이페이지 ( 회원정보 수정 페이지 )
   useEffect(() => {
     async function fetchUserData() {
       try {
