@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MessageCircle, LogOut, LogIn } from "lucide-react";
 import Logo from "@/components/Logo";
 import { supabase } from "@/lib/supabase";
+import Cookies from "js-cookie";
 
 function Header() {
   const [mounted, setMounted] = useState(false);
@@ -24,6 +25,8 @@ function Header() {
       setUserData(null);
       setToken(null);
 
+      Cookies.remove("auth_token");
+
       window.location.href = "/"; // 홈페이지로 리다이렉트
     } catch (error) {
       console.error("Logout failed:", error);
@@ -36,7 +39,9 @@ function Header() {
   return (
     <header className="w-full fixed top-0 left-0 bg-white h-14 border-b border-[#C1AC95] z-50">
       <div className="max-w-7xl mx-auto h-full flex justify-between items-center px-4">
-        <Logo className="text-[#91684A]" />
+        <Link href="/">
+          <Logo className="text-[#91684A]" />
+        </Link>
         <div className="font-goryeong flex items-center space-x-4">
           {userData ? (
             <>

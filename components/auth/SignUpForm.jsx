@@ -2,13 +2,13 @@
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui/button";
+import Logo from "@/components/Logo";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { UserPlus, Mail, Lock, User, MessageSquare } from "lucide-react";
 
 export default function SignUpForm() {
   const {
@@ -123,12 +123,18 @@ export default function SignUpForm() {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="flex flex-col items-center mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="flex flex-col items-center">
+          <Logo className="text-[#91684A]" fontSize="text-5xl" />
+          <p className="font-goryeong text-[#91684A] mt-2 text-center text-2xl">
+            회원가입
+          </p>
+        </div>
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <div className="flex items-center justify-center">
             <div
-              className="w-36 h-36 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center cursor-pointer"
+              className="w-40 h-40 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center cursor-pointer"
               onClick={handleImageClick}
             >
               {profileImage ? (
@@ -138,7 +144,7 @@ export default function SignUpForm() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-gray-400">Click to add</span>
+                <span className="text-gray-400">프로필 사진</span>
               )}
             </div>
             <Input
@@ -150,106 +156,137 @@ export default function SignUpForm() {
               accept="image/*"
             />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              {...register("email", { required: "Email is required" })}
-              placeholder="Enter your email"
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
-            )}
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                이메일
+              </label>
+              <Input
+                id="email"
+                type="email"
+                {...register("email", { required: "이메일을 입력해주세요." })}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
+                placeholder="이메일"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                비밀번호
+              </label>
+              <Input
+                id="password"
+                type="password"
+                {...register("password", {
+                  required: "비밀번호를 입력해주세요.",
+                  validate: validatePassword,
+                })}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
+                placeholder="비밀번호"
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="sr-only">
+                비밀번호 확인
+              </label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                {...register("confirmPassword", {
+                  required: "비밀번호를 다시 입력해주세요.",
+                  validate: (value) =>
+                    value === password || "비밀번호가 일치하지 않습니다.",
+                })}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
+                placeholder="비밀번호 확인"
+              />
+            </div>
+            <div>
+              <label htmlFor="username" className="sr-only">
+                닉네임
+              </label>
+              <Input
+                id="username"
+                {...register("username", {
+                  required: "닉네임을 입력해주세요.",
+                })}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
+                placeholder="닉네임"
+              />
+            </div>
+            <div>
+              <label htmlFor="profile_message" className="sr-only">
+                프로필 메시지
+              </label>
+              <Textarea
+                id="profile_message"
+                {...register("profile_message", {
+                  maxLength: {
+                    value: 50,
+                    message: "프로필 메시지는 50자를 초과할 수 없습니다.",
+                  },
+                })}
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
+                placeholder="프로필 메시지 (최대 50자)"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              {...register("password", {
-                required: "비밀번호는 필수입니다.",
-                validate: validatePassword,
-              })}
-              placeholder="비밀번호 입력"
-            />
-            {errors.password && (
-              <p className="text-sm text-red-500">{errors.password.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              {...register("confirmPassword", {
-                required: "비밀번호를 다시 입력해주세요.",
-                validate: (value) =>
-                  value === password || "비밀번호가 일치하지 않습니다.",
-              })}
-              placeholder="비밀번호 확인"
-            />
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-500">
-                {errors.confirmPassword.message}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              {...register("username", { required: "Username is required" })}
-              placeholder="Choose a username"
-            />
-            {errors.username && (
-              <p className="text-sm text-red-500">{errors.username.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="profile_message">Profile Message</Label>
-            <Textarea
-              id="profile_message"
-              {...register("profile_message", {
-                maxLength: {
-                  value: 50,
-                  message: "프로필 메시지는 50자를 초과할 수 없습니다.",
-                },
-              })}
-              placeholder="자기소개를 입력하세요 (최대 50자)"
-              className="h-24"
-            />
-            {errors.profile_message && (
-              <p className="text-sm text-red-500">
-                {errors.profile_message.message}
-              </p>
-            )}
-          </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+          {errors.email && (
+            <p className="text-red-500 text-xs italic">
+              {errors.email.message}
+            </p>
+          )}
+          {errors.password && (
+            <p className="text-red-500 text-xs italic">
+              {errors.password.message}
+            </p>
+          )}
+          {errors.confirmPassword && (
+            <p className="text-red-500 text-xs italic">
+              {errors.confirmPassword.message}
+            </p>
+          )}
+          {errors.username && (
+            <p className="text-red-500 text-xs italic">
+              {errors.username.message}
+            </p>
+          )}
+          {errors.profile_message && (
+            <p className="text-red-500 text-xs italic">
+              {errors.profile_message.message}
+            </p>
           )}
 
-          <Button type="submit" className="w-full">
-            Sign Up
-          </Button>
+          {error && <p className="mt-2 text-center text-red-600">{error}</p>}
+
+          <div>
+            <Button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#91684A] hover:bg-[#7D5A3C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#91684A]"
+            >
+              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                <UserPlus
+                  className="h-5 w-5 text-[#7D5A3C] group-hover:text-[#91684A]"
+                  aria-hidden="true"
+                />
+              </span>
+              회원가입
+            </Button>
+          </div>
         </form>
-      </CardContent>
-      <CardFooter className="justify-center">
-        <p className="text-sm text-gray-500">
-          Already have an account?{" "}
-          <a href="/login" className="text-blue-500 hover:underline">
-            Log in
-          </a>
-        </p>
-      </CardFooter>
-    </Card>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            이미 계정이 있으신가요?{" "}
+            <Link
+              href="/login"
+              className="font-medium text-[#91684A] hover:text-[#7D5A3C]"
+            >
+              로그인
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
