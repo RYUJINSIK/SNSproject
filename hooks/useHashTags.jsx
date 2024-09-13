@@ -25,7 +25,7 @@ const useHashtags = (initialHashtags = []) => {
 
   const handleHashtagInputKeyDown = useCallback(
     (e) => {
-      if (e.key === "Enter" && !e.altKey && !e.nativeEvent.isComposing) {
+      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
         e.preventDefault();
         addHashtag();
       }
@@ -40,7 +40,6 @@ const useHashtags = (initialHashtags = []) => {
   return {
     hashtags,
     hashtagInput,
-    setHashtagInput,
     handleHashtagInputChange,
     handleHashtagInputKeyDown,
     addHashtag,

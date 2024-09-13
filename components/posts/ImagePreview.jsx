@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 
-const ImagePreview = ({ image, index, removeImage }) => (
+const ImagePreview = React.memo(({ image, index, removeImage }) => (
   <div className="relative">
     <Image
       src={image}
@@ -19,6 +19,8 @@ const ImagePreview = ({ image, index, removeImage }) => (
       ×
     </button>
   </div>
-);
+));
 
-export default React.memo(ImagePreview);
+ImagePreview.displayName = "ImagePreview";
+
+export default ImagePreview;
