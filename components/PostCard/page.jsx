@@ -11,8 +11,9 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send } from "lucide-react";
+import { Heart, MessageCircle, Send, Edit } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useUserStore } from "@/store/useUserStore";
 
 const PostCard = ({ postId }) => {
   const [post, setPost] = useState(null);
@@ -20,6 +21,8 @@ const PostCard = ({ postId }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [newComment, setNewComment] = useState("");
+
+  const userData = useUserStore((state) => state.userData);
 
   useEffect(() => {
     fetchPostDetails();
@@ -30,7 +33,18 @@ const PostCard = ({ postId }) => {
   const fetchPostDetails = async () => {
     const { data, error } = await supabase
       .from("posts")
-      .select("*")
+      .select(
+        `
+        *,
+        user:user_email (
+          id,
+          username,
+          email,
+          profile_image_url,
+          profile_message
+        )
+      `
+      )
       .eq("id", postId)
       .single();
 
@@ -70,17 +84,28 @@ const PostCard = ({ postId }) => {
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
       <CardContent className="p-6">
-        <div className="flex items-center space-x-4 mb-4">
-          <Avatar className="w-12 h-12">
-            {/* <AvatarImage src={post.user.avatar_url} /> */}
-            <AvatarFallback>{post.user_email}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h3 className="font-semibold text-lg">{post.user_email}</h3>
-            <p className="text-sm text-gray-500">
-              Posted on {new Date(post.created_at).toLocaleDateString()}
-            </p>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-4">
+            <Avatar className="w-12 h-12">
+              <AvatarImage src={post.user?.profile_image_url} />
+              <AvatarFallback>
+                {post.user?.username?.[0] || post.user_email[0]}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold text-lg">
+                {post.user?.username || post.user_email}
+              </h3>
+              <p className="text-sm text-gray-500">
+                작성일 : {new Date(post.created_at).toLocaleDateString()}
+              </p>
+            </div>
           </div>
+          {userData && userData.email === post.user_email && (
+            <Button variant="ghost" size="sm">
+              <Edit className="h-5 w-5" />
+            </Button>
+          )}
         </div>
 
         <Carousel className="w-full mb-4">
@@ -118,6 +143,18 @@ const PostCard = ({ postId }) => {
 
         <p className="text-lg mb-4">{post.description}</p>
 
+        {post.hashtags && post.hashtags.length > 0 && (
+          <div className="mb-4">
+            {post.hashtags.map((tag, index) => (
+              <span
+                key={index}
+                className="inline-block bg-[#FADFA1] rounded-full px-3 py-1 text-sm font-semibold text-[#664343] mr-2 mb-2"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="space-y-4">
           <h3 className="font-semibold text-lg">Comments</h3>
           {comments.map((comment) => (
