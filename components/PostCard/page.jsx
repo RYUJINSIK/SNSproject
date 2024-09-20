@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ const PostCard = ({ postId }) => {
   const [likeCount, setLikeCount] = useState(0);
   const [newComment, setNewComment] = useState("");
 
+  const router = useRouter();
   const userData = useUserStore((state) => state.userData);
 
   useEffect(() => {
@@ -79,6 +81,10 @@ const PostCard = ({ postId }) => {
     setNewComment("");
   };
 
+  const handleEditClick = () => {
+    router.push(`/posts/write?postId=${postId}`);
+  };
+
   if (!post) return <div>Loading...</div>;
 
   return (
@@ -102,7 +108,7 @@ const PostCard = ({ postId }) => {
             </div>
           </div>
           {userData && userData.email === post.user_email && (
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" onClick={handleEditClick}>
               <Edit className="h-5 w-5" />
             </Button>
           )}
