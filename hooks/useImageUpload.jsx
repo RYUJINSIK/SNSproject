@@ -26,7 +26,7 @@ const useImageUpload = (initialImages = []) => {
     setImages((prevImages) => prevImages.filter((_, i) => i !== index));
   }, []);
 
-  return { images, handleImageChange, removeImage };
+  return { images, setImages, handleImageChange, removeImage };
 };
 
 export default useImageUpload;

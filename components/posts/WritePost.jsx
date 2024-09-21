@@ -9,46 +9,76 @@ import useHashtags from "@/hooks/useHashtags";
 import ImagePreview from "./ImagePreview";
 import { useUserStore } from "@/store/useUserStore";
 import { supabase } from "@/lib/supabase";
-import { shallow } from "zustand/shallow";
+import { useRouter } from "next/navigation";
 
-const WritePost = ({ existingPost = null }) => {
-  const [userData, setUserData] = useState({});
+const WritePost = ({ postId = null }) => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const userData = useUserStore((state) => state.userData);
 
-  const { userData: storeData } = useUserStore(
-    (state) => ({
-      userData: state.userData,
-    }),
-    shallow
-  );
-
-  useEffect(() => {
-    setUserData(storeData);
-  }, [storeData]);
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
-  } = useForm({
-    defaultValues: { description: existingPost?.description || "" },
-  });
+  } = useForm();
 
-  const { images, handleImageChange, removeImage } = useImageUpload(
-    existingPost?.images
-  );
+  const { images, setImages, handleImageChange, removeImage } =
+    useImageUpload();
   const {
     hashtags,
+    setHashtags,
     hashtagInput,
     handleHashtagInputChange,
     handleHashtagInputKeyDown,
     addHashtag,
     removeHashtag,
-  } = useHashtags(existingPost?.hashtags);
+  } = useHashtags();
+
+  const fetchPostData = useCallback(async () => {
+    if (!postId) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", postId)
+        .single();
+
+      if (error) throw error;
+
+      setValue("description", data.description);
+      setImages(data.image_urls.map((url) => ({ url })));
+      setHashtags(data.hashtags || []);
+    } catch (error) {
+      console.error("Error fetching post data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [postId, setValue, setImages, setHashtags]);
+
+  useEffect(() => {
+    fetchPostData();
+  }, [fetchPostData]);
 
   const onSubmit = useCallback(
     async (data) => {
+      if (!userData) {
+        console.error("User data is not available");
+        return;
+      }
+
+      setIsLoading(true);
       try {
-        const imageUrls = await Promise.all(
-          images.map(async (image) => {
+        let imageUrls = images.map((img) => img.url || img);
+
+        // Upload new images
+        const newImages = images.filter(
+          (img) => !(typeof img === "string" || img.url)
+        );
+        const newImageUrls = await Promise.all(
+          newImages.map(async (image) => {
             const safeFileName = image.name
               .replace(/\s+/g, "_")
               .replace(/[^a-zA-Z0-9._]/g, "");
@@ -64,25 +94,38 @@ const WritePost = ({ existingPost = null }) => {
           })
         );
 
-        const { data: post, error } = await supabase
-          .from("posts")
-          .insert({
-            user_email: userData.email,
-            description: data.description,
-            image_urls: imageUrls,
-            hashtags,
-          })
-          .single();
+        imageUrls = [
+          ...imageUrls.filter((url) => typeof url === "string"),
+          ...newImageUrls,
+        ];
 
-        if (error) throw error;
-        console.log("Post created:", post);
-        // TODO: 성공 시 처리 (예: 리다이렉트)
+        const postData = {
+          user_email: userData.email,
+          description: data.description,
+          image_urls: imageUrls,
+          hashtags,
+        };
+
+        let result;
+        if (postId) {
+          result = await supabase
+            .from("posts")
+            .update(postData)
+            .eq("id", postId);
+        } else {
+          result = await supabase.from("posts").insert(postData).single();
+        }
+
+        if (result.error) throw result.error;
+        console.log(postId ? "Post updated:" : "Post created:", result.data);
+        router.push("/");
       } catch (error) {
-        console.error("Error creating post:", error);
-        // TODO: 에러 처리
+        console.error("Error saving post:", error);
+      } finally {
+        setIsLoading(false);
       }
     },
-    [images, hashtags]
+    [images, hashtags, userData, postId, router]
   );
 
   const memoizedImages = useMemo(
@@ -90,13 +133,18 @@ const WritePost = ({ existingPost = null }) => {
       images.map((image, index) => (
         <ImagePreview
           key={index}
-          image={typeof image === "string" ? image : URL.createObjectURL(image)}
+          image={
+            image.url ||
+            (typeof image === "string" ? image : URL.createObjectURL(image))
+          }
           index={index}
           removeImage={removeImage}
         />
       )),
     [images, removeImage]
   );
+
+  if (isLoading) return <div>Loading...</div>;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -135,7 +183,6 @@ const WritePost = ({ existingPost = null }) => {
           value={hashtagInput}
           onChange={handleHashtagInputChange}
           onKeyDown={handleHashtagInputKeyDown}
-          onBlur={addHashtag}
         />
         <div className="flex flex-wrap gap-2 mt-2">
           {hashtags.map((tag, index) => (
@@ -156,8 +203,8 @@ const WritePost = ({ existingPost = null }) => {
         </div>
       </div>
 
-      <Button type="submit">
-        {existingPost ? "게시글 수정" : "게시글 등록"}
+      <Button type="submit" disabled={isLoading}>
+        {postId ? "게시글 수정" : "게시글 등록"}
       </Button>
     </form>
   );

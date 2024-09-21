@@ -11,13 +11,15 @@ const useHashtags = (initialHashtags = []) => {
   const addHashtag = useCallback(() => {
     const trimmedInput = hashtagInput.trim();
     if (trimmedInput) {
-      const newTags = trimmedInput
-        .split(/\s+/)
-        .map((tag) => (tag.startsWith("#") ? tag : `#${tag}`));
+      const newTag = trimmedInput.startsWith("#")
+        ? trimmedInput
+        : `#${trimmedInput}`;
 
       setHashtags((prevTags) => {
-        const uniqueNewTags = newTags.filter((tag) => !prevTags.includes(tag));
-        return [...prevTags, ...uniqueNewTags];
+        if (!prevTags.includes(newTag)) {
+          return [...prevTags, newTag];
+        }
+        return prevTags;
       });
       setHashtagInput("");
     }
@@ -25,7 +27,7 @@ const useHashtags = (initialHashtags = []) => {
 
   const handleHashtagInputKeyDown = useCallback(
     (e) => {
-      if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         addHashtag();
       }
@@ -33,12 +35,13 @@ const useHashtags = (initialHashtags = []) => {
     [addHashtag]
   );
 
-  const removeHashtag = useCallback((tag) => {
-    setHashtags((prevHashtags) => prevHashtags.filter((t) => t !== tag));
+  const removeHashtag = useCallback((tagToRemove) => {
+    setHashtags((prevTags) => prevTags.filter((tag) => tag !== tagToRemove));
   }, []);
 
   return {
     hashtags,
+    setHashtags,
     hashtagInput,
     handleHashtagInputChange,
     handleHashtagInputKeyDown,
