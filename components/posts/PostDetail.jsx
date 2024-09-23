@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,19 +14,68 @@ import { useUserStore } from "@/store/useUserStore";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLike } from "@/hooks/useLike";
-import { useComments } from "@/hooks/useComments";
+import useSWRInfinite from "swr/infinite";
+
+const COMMENTS_PER_PAGE = 10;
+
+const fetcher = async (url) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch comments");
+  return res.json();
+};
 
 const PostDetail = ({ post }) => {
   const [newComment, setNewComment] = useState("");
   const router = useRouter();
   const userData = useUserStore((state) => state.userData);
   const { isLiked, likeCount, toggleLike } = useLike(post.id);
-  const { comments, addComment } = useComments(post.id);
+  const commentsEndRef = useRef(null);
+
+  const getKey = (pageIndex, previousPageData) => {
+    if (previousPageData && !previousPageData.length) return null;
+    return `/api/comments?postId=${post.id}&page=${pageIndex}&limit=${COMMENTS_PER_PAGE}`;
+  };
+
+  const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher);
+
+  const comments = data ? [].concat(...data) : [];
+  const isLoadingInitialData = !data && !error;
+  const isLoadingMore =
+    isLoadingInitialData ||
+    (size > 0 && data && typeof data[size - 1] === "undefined");
+  const isEmpty = data?.[0]?.length === 0;
+  const isReachingEnd =
+    isEmpty || (data && data[data.length - 1]?.length < COMMENTS_PER_PAGE);
+
+  const loadMoreComments = () => {
+    if (!isReachingEnd && !isLoadingMore) {
+      setSize(size + 1);
+    }
+  };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreComments();
+        }
+      },
+      { threshold: 1 }
+    );
+
+    if (commentsEndRef.current) {
+      observer.observe(commentsEndRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [commentsEndRef, loadMoreComments]);
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    await addComment(newComment);
+    // Implement comment submission logic here
+    // After successful submission:
     setNewComment("");
+    // Optionally, you can invalidate the SWR cache to refetch comments
   };
 
   const handleEdit = () => {
@@ -136,7 +185,7 @@ const PostDetail = ({ post }) => {
                 </div>
               </div>
 
-              <div className="space-y-4 mb-4">
+              <div className="space-y-4 mb-4 h-60 overflow-y-auto">
                 <h3 className="font-semibold text-md">댓글</h3>
                 {comments.map((comment) => (
                   <div
@@ -160,6 +209,9 @@ const PostDetail = ({ post }) => {
                     </div>
                   </div>
                 ))}
+                {!isReachingEnd && <div ref={commentsEndRef} />}
+                {isLoadingMore && <p>댓글 로딩중</p>}
+                {isReachingEnd && <p>댓글이 없습니다.</p>}
               </div>
 
               <form onSubmit={handleCommentSubmit} className="flex space-x-2">
