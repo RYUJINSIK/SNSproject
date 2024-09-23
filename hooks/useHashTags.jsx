@@ -21,7 +21,7 @@ const useHashtags = (initialHashtags = []) => {
         }
         return prevTags;
       });
-      setHashtagInput("");
+      setHashtagInput(""); // 입력 필드 초기화
     }
   }, [hashtagInput]);
 

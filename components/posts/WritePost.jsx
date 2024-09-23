@@ -35,6 +35,10 @@ const WritePost = ({ postId = null }) => {
     removeHashtag,
   } = useHashtags();
 
+  useEffect(() => {
+    console.log("hashtag ? : ", hashtags);
+  }, [hashtags]);
+
   const fetchPostData = useCallback(async () => {
     if (!postId) return;
 
@@ -144,69 +148,118 @@ const WritePost = ({ postId = null }) => {
     [images, removeImage]
   );
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading)
+    return (
+      <div className="w-full h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div className="flex items-center space-x-4">
-        <Button
-          type="button"
-          onClick={() => document.getElementById("file-input").click()}
-        >
-          이미지 선택
-        </Button>
-        <input
-          id="file-input"
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleImageChange}
-          className="hidden"
-        />
-        <span>{images.length}/5 파일 선택됨</span>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mt-2">{memoizedImages}</div>
-
-      <Textarea
-        placeholder="게시글 내용을 입력하세요"
-        {...register("description", { required: "이 필드는 필수입니다." })}
-      />
-      {errors.description && (
-        <span className="text-red-500">{errors.description.message}</span>
-      )}
-
-      <div>
-        <Input
-          type="text"
-          placeholder="#해시태그 입력 후 Enter"
-          value={hashtagInput}
-          onChange={handleHashtagInputChange}
-          onKeyDown={handleHashtagInputKeyDown}
-        />
-        <div className="flex flex-wrap gap-2 mt-2">
-          {hashtags.map((tag, index) => (
-            <span
-              key={index}
-              className="bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center"
-            >
-              {tag}
-              <button
+    <div className="flex items-center justify-center min-h-full bg-white">
+      <div className="max-w-4xl w-full p-6">
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+          {postId ? "게시글 수정" : "새 게시글 작성"}
+        </h1>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              이미지 업로드
+            </label>
+            <div className="flex items-center space-x-4">
+              <Button
                 type="button"
-                onClick={() => removeHashtag(tag)}
-                className="ml-1 text-red-500 font-bold"
+                onClick={() => document.getElementById("file-input").click()}
+                className="bg-[#664343] hover:bg-[#a38181] text-white"
               >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
+                이미지 선택
+              </Button>
+              <input
+                id="file-input"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="hidden"
+              />
+              <span className="text-sm text-gray-500">
+                {images.length}/5 파일 선택됨
+              </span>
+            </div>
+          </div>
 
-      <Button type="submit" disabled={isLoading}>
-        {postId ? "게시글 수정" : "게시글 등록"}
-      </Button>
-    </form>
+          {images.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">{memoizedImages}</div>
+          )}
+
+          <div className="space-y-2">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700"
+            >
+              게시글 내용
+            </label>
+            <Textarea
+              id="description"
+              placeholder="게시글 내용을 입력하세요"
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              rows={6}
+              {...register("description", {
+                required: "이 필드는 필수입니다.",
+              })}
+            />
+            {errors.description && (
+              <span className="text-red-500 text-sm">
+                {errors.description.message}
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="hashtags"
+              className="block text-sm font-medium text-gray-700"
+            >
+              해시태그
+            </label>
+            <Input
+              id="hashtags"
+              type="text"
+              placeholder="#해시태그 입력 후 Enter"
+              value={hashtagInput}
+              onChange={handleHashtagInputChange}
+              onKeyDown={handleHashtagInputKeyDown}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            />
+            <div className="flex flex-wrap gap-2 mt-2">
+              {hashtags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="bg-[#FADFA1] text-[#664343] px-3 py-1 rounded-lg text-sm font-semibold flex items-center"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeHashtag(tag)}
+                    className="ml-2 text-[#664343] focus:outline-none"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-[#664343] hover:bg-[#a38181] text-white py-2 px-4 rounded-md transition duration-300"
+          >
+            {isLoading ? "처리 중..." : postId ? "게시글 수정" : "게시글 등록"}
+          </Button>
+        </form>
+      </div>
+    </div>
   );
 };
 

@@ -6,15 +6,15 @@ const ImagePreview = React.memo(({ image, index, removeImage }) => (
     <Image
       src={image}
       alt={`Preview ${index}`}
-      width={80}
-      height={80}
-      style={{ width: 80, height: 80 }}
+      width={150}
+      height={150}
+      style={{ width: 150, height: 150 }}
       className="object-cover rounded"
     />
     <button
       type="button"
       onClick={() => removeImage(index)}
-      className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
+      className="absolute top-1 right-1 bg-[#91684A] text-white text-lg rounded-full w-6 h-6 flex items-center justify-center"
     >
       ×
     </button>

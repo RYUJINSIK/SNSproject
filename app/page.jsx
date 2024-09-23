@@ -24,14 +24,9 @@ export default function Index() {
 
   return (
     <WithComponentLayout>
-      <div>
-        <p>Token: {token}</p>
-        <p>User Data: {JSON.stringify(userData)}</p>
-      </div>
       <PostCard postId={1} />
       <PostCard postId={2} />
       <PostCard postId={3} />
-      <p>hi</p>
     </WithComponentLayout>
   );
 }

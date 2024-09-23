@@ -1,35 +1,29 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Heart, MessageCircle, Edit } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { useUserStore } from "@/store/useUserStore";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Send, Edit } from "lucide-react";
-import { supabase } from "@/lib/supabase";
-import { useUserStore } from "@/store/useUserStore";
+import { useLike } from "@/hooks/useLike";
+import { useComments } from "@/hooks/useComments";
 
 const PostCard = ({ postId }) => {
   const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
-  const [newComment, setNewComment] = useState("");
-
   const router = useRouter();
   const userData = useUserStore((state) => state.userData);
+  const { isLiked, likeCount, toggleLike } = useLike(postId);
+  const { comments } = useComments(postId);
 
   useEffect(() => {
     fetchPostDetails();
-    fetchComments();
-    checkLikeStatus();
   }, [postId]);
 
   const fetchPostDetails = async () => {
@@ -38,7 +32,7 @@ const PostCard = ({ postId }) => {
       .select(
         `
         *,
-        user:user_email (
+        user:user (
           id,
           username,
           email,
@@ -53,32 +47,12 @@ const PostCard = ({ postId }) => {
     if (error) {
       console.error("Error fetching post:", error);
     } else {
-      console.log(data);
       setPost(data);
     }
   };
 
-  const fetchComments = async () => {
-    setComments([
-      { id: 1, user_name: "User1", user_avatar: null, content: "Great post!" },
-      { id: 2, user_name: "User2", user_avatar: null, content: "I love this!" },
-    ]);
-  };
-
-  const checkLikeStatus = async () => {
-    setIsLiked(false);
-    setLikeCount(10);
-  };
-
-  const handleLike = async () => {
-    setIsLiked(!isLiked);
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
-  };
-
-  const handleCommentSubmit = async (e) => {
-    e.preventDefault();
-    console.log("New comment:", newComment);
-    setNewComment("");
+  const handleViewDetails = () => {
+    router.push(`/posts/${postId}`);
   };
 
   const handleEditClick = () => {
@@ -86,6 +60,12 @@ const PostCard = ({ postId }) => {
   };
 
   if (!post) return <div>Loading...</div>;
+
+  const truncatedDescription = post.description
+    .split("\n")
+    .slice(0, 3)
+    .join("\n");
+  const isDescriptionTruncated = post.description.split("\n").length > 3;
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-lg">
@@ -132,7 +112,7 @@ const PostCard = ({ postId }) => {
           <Button
             variant="ghost"
             className="flex items-center gap-2"
-            onClick={handleLike}
+            onClick={toggleLike}
           >
             <Heart
               className={`w-6 h-6 ${
@@ -141,56 +121,39 @@ const PostCard = ({ postId }) => {
             />
             <span>{likeCount} likes</span>
           </Button>
-          <Button variant="ghost" className="flex items-center gap-2">
-            <MessageCircle className="w-6 h-6" />
-            <span>{comments.length} comments</span>
-          </Button>
         </div>
 
-        <p className="text-lg mb-4">{post.description}</p>
+        <p className="text-lg mb-1 whitespace-pre-wrap">
+          {truncatedDescription}
+        </p>
+        {isDescriptionTruncated && (
+          <Button variant="link" onClick={handleViewDetails}>
+            ... 더보기
+          </Button>
+        )}
 
         {post.hashtags && post.hashtags.length > 0 && (
           <div className="mb-4">
             {post.hashtags.map((tag, index) => (
               <span
                 key={index}
-                className="inline-block bg-[#FADFA1] rounded-full px-3 py-1 text-sm font-semibold text-[#664343] mr-2 mb-2"
+                className="inline-block rounded-lg px-3 py-1 text-sm font-semibold bg-[#FADFA1] text-[#664343] mr-2 mb-2"
               >
                 {tag}
               </span>
             ))}
           </div>
         )}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-lg">Comments</h3>
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex items-start space-x-3">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={comment.user_avatar} />
-                <AvatarFallback>{comment.user_name[0]}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="font-medium">{comment.user_name}</p>
-                <p className="text-gray-600">{comment.content}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+
+        <Button
+          variant="ghost"
+          className="flex items-center gap-2"
+          onClick={handleViewDetails}
+        >
+          <MessageCircle className="w-6 h-6" />
+          <span>{comments.length}개의 댓글보기</span>
+        </Button>
       </CardContent>
-      <CardFooter>
-        <form onSubmit={handleCommentSubmit} className="w-full flex space-x-2">
-          <Input
-            type="text"
-            placeholder="Add a comment..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            className="flex-grow"
-          />
-          <Button type="submit" size="icon">
-            <Send className="w-4 h-4" />
-          </Button>
-        </form>
-      </CardFooter>
     </Card>
   );
 };
