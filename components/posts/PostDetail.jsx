@@ -178,10 +178,7 @@ const PostDetail = ({ post }) => {
                   >
                     <Avatar className="w-10 h-10">
                       <AvatarImage
-                        src={
-                          comment.user?.profile_image_url ||
-                          process.env.NEXT_PUBLIC_DEFAULT_AVATAR_URL
-                        }
+                        src={comment.user?.profile_image_url}
                         alt={comment.user?.username}
                       />
                       <AvatarFallback>
@@ -191,7 +188,6 @@ const PostDetail = ({ post }) => {
                     <div className="flex-1">
                       <p className="font-medium text-sm">
                         {comment.user?.username}
-                        {comment.user?.profile_image_url}
                       </p>
                       <p className="text-sm">{comment.content}</p>
                       <p className="text-[0.7rem] text-gray-500">

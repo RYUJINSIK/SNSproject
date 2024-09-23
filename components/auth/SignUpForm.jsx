@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
@@ -21,8 +22,8 @@ export default function SignUpForm() {
   const [profileImage, setProfileImage] = useState(null);
   const router = useRouter();
   const fileInputRef = useRef(null);
-
   const password = watch("password");
+  let defaultImage = process.env.NEXT_PUBLIC_DEFAULT_AVATAR_URL;
 
   const onSubmit = async (data) => {
     try {
@@ -43,11 +44,11 @@ export default function SignUpForm() {
         return;
       }
 
-      let profileImageUrl = null;
+      let profileImageUrl = defaultImage; // 기본 이미지 URL로 초기화
+
       if (fileInputRef.current && fileInputRef.current.files[0]) {
         const file = fileInputRef.current.files[0];
         const filePath = `public/profileImages/${data.username}`;
-
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("ImageBucket")
           .upload(filePath, file);
@@ -61,7 +62,7 @@ export default function SignUpForm() {
 
         if (urlError) throw urlError;
 
-        profileImageUrl = publicUrl;
+        profileImageUrl = publicUrl; // 업로드된 이미지 URL로 업데이트
       }
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -70,7 +71,7 @@ export default function SignUpForm() {
         options: {
           data: {
             username: data.username,
-            profile_image_url: profileImageUrl,
+            profile_image_url: profileImageUrl, // 항상 값이 있음 (기본 이미지 또는 업로드된 이미지)
             profile_message: data.profile_message,
           },
         },
@@ -109,70 +110,99 @@ export default function SignUpForm() {
 
   const validatePassword = (value) => {
     if (value.length < 8) return "비밀번호는 최소 8자 이상이어야 합니다.";
-
     let typeCount = 0;
     if (/[A-Z]/.test(value)) typeCount++;
     if (/[a-z]/.test(value)) typeCount++;
     if (/[0-9]/.test(value)) typeCount++;
     if (/[!@#$%^&*(),.?":{}|<>]/.test(value)) typeCount++;
-
     if (typeCount < 3)
       return "비밀번호는 영어 대문자, 소문자, 숫자, 특수문자 중 3종류 이상을 포함해야 합니다.";
-
     return true;
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
         <div className="flex flex-col items-center">
           <Logo className="text-[#91684A]" fontSize="text-5xl" />
           <p className="font-goryeong text-[#91684A] mt-2 text-center text-2xl">
             회원가입
           </p>
         </div>
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="flex items-center justify-center">
-            <div
-              className="w-40 h-40 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center cursor-pointer"
-              onClick={handleImageClick}
-            >
-              {profileImage ? (
-                <img
-                  src={profileImage}
-                  alt="Profile Preview"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-gray-400">프로필 사진</span>
-              )}
-            </div>
-            <Input
-              id="profileImage"
-              type="file"
-              ref={fileInputRef}
-              className="hidden"
-              onChange={handleImageChange}
-              accept="image/*"
-            />
+        <div className="flex items-center justify-center mt-2">
+          <div
+            className="w-40 h-40 rounded-full overflow-hidden border-2 border-gray-300 flex items-center justify-center cursor-pointer"
+            onClick={handleImageClick}
+          >
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile Preview"
+                className="w-full h-full object-cover rounded-full"
+              />
+            ) : (
+              <div
+                className="w-full h-full bg-cover bg-center rounded-full relative"
+                style={{ backgroundImage: `url(${defaultImage})` }}
+              >
+                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
+                  <span className="text-white text-sm font-medium">
+                    프로필 사진 선택
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email" className="sr-only">
-                이메일
-              </label>
+          <Input
+            id="profileImage"
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            onChange={handleImageChange}
+            accept="image/*"
+          />
+        </div>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* 이메일 입력 필드 */}
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
+              이메일
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail className="h-5 w-5 text-gray-400" />
+              </div>
               <Input
                 id="email"
                 type="email"
                 {...register("email", { required: "이메일을 입력해주세요." })}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
-                placeholder="이메일"
+                className="pl-10"
+                placeholder="example@example.com"
               />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                비밀번호
-              </label>
+            {errors.email && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.email.message}
+              </p>
+            )}
+          </div>
+
+          {/* 비밀번호 입력 필드 */}
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700"
+            >
+              비밀번호
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
               <Input
                 id="password"
                 type="password"
@@ -180,112 +210,127 @@ export default function SignUpForm() {
                   required: "비밀번호를 입력해주세요.",
                   validate: validatePassword,
                 })}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
-                placeholder="비밀번호"
+                className="pl-10"
+                placeholder="********"
               />
             </div>
-            <div>
-              <label htmlFor="confirmPassword" className="sr-only">
-                비밀번호 확인
-              </label>
+            {errors.password && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.password.message}
+              </p>
+            )}
+          </div>
+
+          {/* 비밀번호 확인 필드 */}
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700"
+            >
+              비밀번호 확인
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock className="h-5 w-5 text-gray-400" />
+              </div>
               <Input
                 id="confirmPassword"
                 type="password"
                 {...register("confirmPassword", {
-                  required: "비밀번호를 다시 입력해주세요.",
+                  required: "비밀번호 확인을 입력해주세요.",
                   validate: (value) =>
                     value === password || "비밀번호가 일치하지 않습니다.",
                 })}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
-                placeholder="비밀번호 확인"
+                className="pl-10"
+                placeholder="********"
               />
             </div>
-            <div>
-              <label htmlFor="username" className="sr-only">
-                닉네임
-              </label>
+            {errors.confirmPassword && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+
+          {/* 닉네임 입력 필드 */}
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-gray-700"
+            >
+              닉네임
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-400" />
+              </div>
               <Input
                 id="username"
+                type="text"
                 {...register("username", {
                   required: "닉네임을 입력해주세요.",
+                  minLength: {
+                    value: 2,
+                    message: "닉네임은 최소 2자 이상이어야 합니다.",
+                  },
+                  maxLength: {
+                    value: 20,
+                    message: "닉네임은 최대 20자까지 가능합니다.",
+                  },
                 })}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
+                className="pl-10"
                 placeholder="닉네임"
               />
             </div>
-            <div>
-              <label htmlFor="profile_message" className="sr-only">
-                프로필 메시지
-              </label>
+            {errors.username && (
+              <p className="mt-2 text-sm text-red-600">
+                {errors.username.message}
+              </p>
+            )}
+          </div>
+
+          {/* 프로필 메시지 입력 필드 */}
+          <div>
+            <label
+              htmlFor="profile_message"
+              className="block text-sm font-medium text-gray-700"
+            >
+              프로필 메시지
+            </label>
+            <div className="mt-1 relative rounded-md shadow-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MessageSquare className="h-5 w-5 text-gray-400" />
+              </div>
               <Textarea
                 id="profile_message"
-                {...register("profile_message", {
-                  maxLength: {
-                    value: 50,
-                    message: "프로필 메시지는 50자를 초과할 수 없습니다.",
-                  },
-                })}
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-[#91684A] focus:border-[#91684A] focus:z-10 sm:text-sm"
-                placeholder="프로필 메시지 (최대 50자)"
+                {...register("profile_message")}
+                className="pl-10"
+                placeholder="자신을 소개해주세요"
+                rows={3}
               />
             </div>
           </div>
 
-          {errors.email && (
-            <p className="text-red-500 text-xs italic">
-              {errors.email.message}
-            </p>
-          )}
-          {errors.password && (
-            <p className="text-red-500 text-xs italic">
-              {errors.password.message}
-            </p>
-          )}
-          {errors.confirmPassword && (
-            <p className="text-red-500 text-xs italic">
-              {errors.confirmPassword.message}
-            </p>
-          )}
-          {errors.username && (
-            <p className="text-red-500 text-xs italic">
-              {errors.username.message}
-            </p>
-          )}
-          {errors.profile_message && (
-            <p className="text-red-500 text-xs italic">
-              {errors.profile_message.message}
-            </p>
-          )}
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
-          {error && <p className="mt-2 text-center text-red-600">{error}</p>}
-
-          <div>
-            <Button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#91684A] hover:bg-[#7D5A3C] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#91684A]"
-            >
-              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                <UserPlus
-                  className="h-5 w-5 text-[#7D5A3C] group-hover:text-[#91684A]"
-                  aria-hidden="true"
-                />
-              </span>
-              회원가입
-            </Button>
-          </div>
+          <Button
+            type="submit"
+            className="w-full flex justify-center bg-[#91684A] hover:bg-[#7D5A3C] "
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
+            회원가입
+          </Button>
         </form>
 
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            이미 계정이 있으신가요?{" "}
-            <Link
-              href="/login"
-              className="font-medium text-[#91684A] hover:text-[#7D5A3C]"
-            >
-              로그인
-            </Link>
-          </p>
-        </div>
+        <p className="mt-4 text-center text-sm text-gray-600">
+          이미 계정이 있으신가요?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-[#91684A] hover:text-[#7D5A3C]"
+          >
+            로그인
+          </Link>
+        </p>
       </div>
     </div>
   );
