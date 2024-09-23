@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,68 +14,53 @@ import { useUserStore } from "@/store/useUserStore";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLike } from "@/hooks/useLike";
-import useSWRInfinite from "swr/infinite";
-
-const COMMENTS_PER_PAGE = 10;
-
-const fetcher = async (url) => {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch comments");
-  return res.json();
-};
 
 const PostDetail = ({ post }) => {
   const [newComment, setNewComment] = useState("");
+  const [comments, setComments] = useState([]);
   const router = useRouter();
   const userData = useUserStore((state) => state.userData);
   const { isLiked, likeCount, toggleLike } = useLike(post.id);
-  const commentsEndRef = useRef(null);
-
-  const getKey = (pageIndex, previousPageData) => {
-    if (previousPageData && !previousPageData.length) return null;
-    return `/api/comments?postId=${post.id}&page=${pageIndex}&limit=${COMMENTS_PER_PAGE}`;
-  };
-
-  const { data, error, size, setSize } = useSWRInfinite(getKey, fetcher);
-
-  const comments = data ? [].concat(...data) : [];
-  const isLoadingInitialData = !data && !error;
-  const isLoadingMore =
-    isLoadingInitialData ||
-    (size > 0 && data && typeof data[size - 1] === "undefined");
-  const isEmpty = data?.[0]?.length === 0;
-  const isReachingEnd =
-    isEmpty || (data && data[data.length - 1]?.length < COMMENTS_PER_PAGE);
-
-  const loadMoreComments = () => {
-    if (!isReachingEnd && !isLoadingMore) {
-      setSize(size + 1);
-    }
-  };
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMoreComments();
-        }
-      },
-      { threshold: 1 }
-    );
+    fetchComments();
+  }, [post.id]);
 
-    if (commentsEndRef.current) {
-      observer.observe(commentsEndRef.current);
+  const fetchComments = async () => {
+    const { data, error } = await supabase
+      .from("comments")
+      .select("*, user:user(username, profile_image_url)")
+      .eq("post_id", post.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching comments:", error);
+    } else {
+      setComments(data);
     }
-
-    return () => observer.disconnect();
-  }, [commentsEndRef, loadMoreComments]);
+  };
 
   const handleCommentSubmit = async (e) => {
+    console.log("??", userData);
     e.preventDefault();
-    // Implement comment submission logic here
-    // After successful submission:
-    setNewComment("");
-    // Optionally, you can invalidate the SWR cache to refetch comments
+    if (!newComment.trim() || !userData) return;
+
+    const { data, error } = await supabase
+      .from("comments")
+      .insert({
+        content: newComment,
+        post_id: post.id,
+        user_email: userData.email,
+      })
+      .select("*, user:user(username, profile_image_url)")
+      .single();
+
+    if (error) {
+      console.error("Error submitting comment:", error);
+    } else {
+      setComments([data, ...comments]);
+      setNewComment("");
+    }
   };
 
   const handleEdit = () => {
@@ -85,7 +70,6 @@ const PostDetail = ({ post }) => {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       const { error } = await supabase.from("posts").delete().eq("id", post.id);
-
       if (error) {
         console.error("Error deleting post:", error);
       } else {
@@ -102,14 +86,15 @@ const PostDetail = ({ post }) => {
             <div className="md:w-1/2">
               <div className="flex items-center space-x-4 mb-4">
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={post.user?.profile_image_url} />
-                  <AvatarFallback>
-                    {post.user?.username?.[0] || post.user_email[0]}
-                  </AvatarFallback>
+                  <AvatarImage
+                    src={post.user.profile_image_url}
+                    alt={post.user.username}
+                  />
+                  <AvatarFallback>{post.user.username[0]}</AvatarFallback>
                 </Avatar>
                 <div>
                   <h3 className="font-semibold text-lg">
-                    {post.user?.username || post.user_email}
+                    {post.user.username}
                   </h3>
                   <p className="text-sm text-gray-500">
                     작성일: {new Date(post.created_at).toLocaleDateString()}
@@ -133,7 +118,7 @@ const PostDetail = ({ post }) => {
             </div>
 
             <div className="md:w-1/2">
-              {userData && userData.email === post.user_email && (
+              {userData && userData.id === post.user_id && (
                 <div className="flex justify-end mb-4">
                   <Button
                     variant="ghost"
@@ -186,21 +171,27 @@ const PostDetail = ({ post }) => {
               </div>
 
               <div className="space-y-4 mb-4 h-60 overflow-y-auto">
-                <h3 className="font-semibold text-md">댓글</h3>
                 {comments.map((comment) => (
                   <div
                     key={comment.id}
                     className="flex items-start space-x-3 border-b pb-2"
                   >
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={comment.user.profile_image_url} />
+                      <AvatarImage
+                        src={
+                          comment.user?.profile_image_url ||
+                          process.env.NEXT_PUBLIC_DEFAULT_AVATAR_URL
+                        }
+                        alt={comment.user?.username}
+                      />
                       <AvatarFallback>
-                        {comment.user.username[0]}
+                        {comment.user?.username[0]}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <p className="font-medium text-sm">
-                        {comment.user.username}
+                        {comment.user?.username}
+                        {comment.user?.profile_image_url}
                       </p>
                       <p className="text-sm">{comment.content}</p>
                       <p className="text-[0.7rem] text-gray-500">
@@ -209,9 +200,6 @@ const PostDetail = ({ post }) => {
                     </div>
                   </div>
                 ))}
-                {!isReachingEnd && <div ref={commentsEndRef} />}
-                {isLoadingMore && <p>댓글 로딩중</p>}
-                {isReachingEnd && <p>댓글이 없습니다.</p>}
               </div>
 
               <form onSubmit={handleCommentSubmit} className="flex space-x-2">

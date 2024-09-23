@@ -32,9 +32,9 @@ export default async function PostPage({ params }) {
   return (
     <WithComponentLayout>
       <div className="container mx-auto px-4 py-8">
-        {/* <Suspense fallback={<div>Loading...</div>}> */}
-        <PostDetail post={postData} />
-        {/* </Suspense> */}
+        <Suspense fallback={<div>Loading...</div>}>
+          <PostDetail post={postData} />
+        </Suspense>
       </div>
     </WithComponentLayout>
   );

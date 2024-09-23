@@ -13,17 +13,17 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import { useLike } from "@/hooks/useLike";
-import { useComments } from "@/hooks/useComments";
 
 const PostCard = ({ postId }) => {
   const [post, setPost] = useState(null);
+  const [commentCount, setCommentCount] = useState(0);
   const router = useRouter();
   const userData = useUserStore((state) => state.userData);
   const { isLiked, likeCount, toggleLike } = useLike(postId);
-  const { comments } = useComments(postId);
 
   useEffect(() => {
     fetchPostDetails();
+    fetchCommentCount();
   }, [postId]);
 
   const fetchPostDetails = async () => {
@@ -48,6 +48,19 @@ const PostCard = ({ postId }) => {
       console.error("Error fetching post:", error);
     } else {
       setPost(data);
+    }
+  };
+
+  const fetchCommentCount = async () => {
+    const { count, error } = await supabase
+      .from("comments")
+      .select("*", { count: "exact", head: true })
+      .eq("post_id", postId);
+
+    if (error) {
+      console.error("Error fetching comment count:", error);
+    } else {
+      setCommentCount(count);
     }
   };
 
@@ -151,7 +164,7 @@ const PostCard = ({ postId }) => {
           onClick={handleViewDetails}
         >
           <MessageCircle className="w-6 h-6" />
-          <span>{comments.length}개의 댓글보기</span>
+          <span>{commentCount}개의 댓글보기</span>
         </Button>
       </CardContent>
     </Card>
