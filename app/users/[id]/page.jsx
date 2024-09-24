@@ -6,7 +6,6 @@ import UserProfile from "@/components/User/UserProfile";
 import { useUserStore } from "@/store/useUserStore";
 
 export default function UserPage({ params }) {
-  const { username } = params;
   const [profileData, setProfileData] = useState(null);
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
@@ -19,7 +18,7 @@ export default function UserPage({ params }) {
         const { data: userData, error: userError } = await supabase
           .from("user")
           .select("*")
-          .eq("username", username)
+          .eq("username", params.id)
           .limit(1)
           .single();
 
@@ -27,8 +26,8 @@ export default function UserPage({ params }) {
 
         const { data: postsData, error: postsError } = await supabase
           .from("posts")
-          .select("id, thumbnail_url")
-          .eq("user_id", userData.id)
+          .select("id, image_urls")
+          .eq("user_email", userData.email)
           .order("created_at", { ascending: false });
 
         if (postsError) throw postsError;
@@ -44,7 +43,7 @@ export default function UserPage({ params }) {
     }
 
     fetchUserData();
-  }, [username]);
+  }, []);
 
   if (loading) return <div>로딩 중...</div>;
   if (error) return <div>{error}</div>;
@@ -54,7 +53,7 @@ export default function UserPage({ params }) {
       <UserProfile
         profileData={profileData}
         posts={posts}
-        isOwnProfile={currentUser?.id === profileData?.id}
+        isOwnProfile={currentUser?.email === profileData?.email}
       />
     </WithComponentLayout>
   );
