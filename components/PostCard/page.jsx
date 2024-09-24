@@ -81,7 +81,7 @@ const PostCard = ({ postId }) => {
   const isDescriptionTruncated = post.description.split("\n").length > 3;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-lg">
+    <Card className="w-full max-w-2xl mx-auto shadow-lg mb-5">
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
@@ -114,7 +114,7 @@ const PostCard = ({ postId }) => {
                 <img
                   src={url}
                   alt={`Post image ${index + 1}`}
-                  className="w-full h-80 object-cover rounded-lg"
+                  className="w-full h-100 object-cover rounded-lg"
                 />
               </CarouselItem>
             ))}
@@ -132,7 +132,15 @@ const PostCard = ({ postId }) => {
                 isLiked ? "fill-red-500 text-red-500" : "text-gray-500"
               }`}
             />
-            <span>{likeCount} likes</span>
+            <span>{likeCount}</span>
+          </Button>
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2"
+            onClick={handleViewDetails}
+          >
+            <MessageCircle className="w-6 h-6" />
+            <span>{commentCount}개의 댓글보기</span>
           </Button>
         </div>
 
@@ -146,7 +154,7 @@ const PostCard = ({ postId }) => {
         )}
 
         {post.hashtags && post.hashtags.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-1">
             {post.hashtags.map((tag, index) => (
               <span
                 key={index}
@@ -157,15 +165,6 @@ const PostCard = ({ postId }) => {
             ))}
           </div>
         )}
-
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2"
-          onClick={handleViewDetails}
-        >
-          <MessageCircle className="w-6 h-6" />
-          <span>{commentCount}개의 댓글보기</span>
-        </Button>
       </CardContent>
     </Card>
   );

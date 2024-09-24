@@ -210,7 +210,10 @@ const PostDetail = ({ post }) => {
                   onChange={(e) => setNewComment(e.target.value)}
                   className="flex-grow"
                 />
-                <Button type="submit">
+                <Button
+                  type="submit"
+                  className=" bg-[#91684A] hover:bg-[#7D5A3C] "
+                >
                   <MessageCircle className="w-5 h-5" />
                 </Button>
               </form>
