@@ -1,18 +1,32 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation"; // useRouter import
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import ProfileEditModal from "./ProfileEditModal";
 
 const UserProfile = ({ profileData, posts, isOwnProfile }) => {
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [profile, setProfile] = useState(profileData);
 
-  if (!profileData) return null;
+  if (!profile) return null;
 
   const handlePostClick = (postId) => {
     router.push(`/posts/${postId}`);
+  };
+
+  const handleEditProfile = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleSaveProfile = async (updatedProfile) => {
+    // TODO: Implement the API call to save the updated profile
+    console.log("Saving profile:", updatedProfile);
+    setProfile({ ...profile, ...updatedProfile });
+    setIsModalOpen(false);
   };
 
   return (
@@ -29,37 +43,42 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
             </Avatar>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-xl mr-5 ">
+                <h3 className="font-semibold text-xl mr-5">
                   {profileData.username}
                 </h3>
                 {isOwnProfile && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className=" bg-[#91684A] hover:bg-[#7D5A3C] text-white"
+                    className="bg-[#91684A] hover:bg-[#7D5A3C] text-white"
+                    onClick={handleEditProfile}
                   >
                     프로필 수정
                   </Button>
                 )}
               </div>
-              <p className="text-sm text-gray-600 mb-4">{profileData.bio}</p>
-              <div className="flex justify-between text-sm max-w-xs">
-                <div className="text-center">
-                  <span className="text-gray-500">팔로워</span>
-                  <span className="font-semibold block">
-                    {profileData.followers_count}
-                  </span>
-                </div>
-                <div className="text-center">
-                  <span className="text-gray-500">팔로잉</span>
-                  <span className="font-semibold block">
-                    {profileData.following_count}
-                  </span>
-                </div>
-                <div className="text-center">
+              <div className="flex items-center space-x-4 mb-4 text-sm">
+                <div>
+                  <span className="font-semibold">{posts.length}</span>{" "}
                   <span className="text-gray-500">게시물</span>
-                  <span className="font-semibold block">{posts.length}</span>
                 </div>
+                <div>
+                  <span className="font-semibold">
+                    {profileData.followers_count}0
+                  </span>{" "}
+                  <span className="text-gray-500">팔로워</span>
+                </div>
+                <div>
+                  <span className="font-semibold">
+                    {profileData.following_count}0
+                  </span>{" "}
+                  <span className="text-gray-500">팔로잉</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                  {profileData.profile_message}
+                </p>
               </div>
             </div>
           </div>
@@ -85,6 +104,13 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
             />
           </div>
         ))}
+
+        <ProfileEditModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          profileData={profile}
+          onSave={handleSaveProfile}
+        />
       </div>
     </div>
   );
