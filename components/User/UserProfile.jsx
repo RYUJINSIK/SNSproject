@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ProfileEditModal from "./ProfileEditModal";
+import { supabase } from "@/lib/supabase";
 
 const UserProfile = ({ profileData, posts, isOwnProfile }) => {
   const router = useRouter();
@@ -23,11 +24,72 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
   };
 
   const handleSaveProfile = async (updatedProfile) => {
-    // TODO: Implement the API call to save the updated profile
-    console.log("Saving profile:", updatedProfile);
-    setProfile({ ...profile, ...updatedProfile });
-    setIsModalOpen(false);
+    try {
+      let profileImageUrl = profile.profile_image_url;
+
+      // 이미지가 변경되었다면 새로운 이미지를 업로드합니다.
+      if (updatedProfile.profileImage !== profile.profile_image_url) {
+        const file = dataURLtoFile(updatedProfile.profileImage, "profile.jpg");
+        const filePath = `public/profileImages/${profile.username}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("ImageBucket")
+          .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        const {
+          data: { publicUrl },
+          error: urlError,
+        } = supabase.storage.from("ImageBucket").getPublicUrl(filePath);
+
+        if (urlError) throw urlError;
+
+        profileImageUrl = publicUrl;
+      }
+
+      // 프로필 정보 업데이트
+      const { data, error } = await supabase
+        .from("user")
+        .update({
+          username: updatedProfile.username,
+          profile_message: updatedProfile.message,
+          profile_image_url: profileImageUrl,
+        })
+        .eq("email", profile.email);
+
+      if (error) {
+        throw error;
+      }
+
+      // 로컬 상태 업데이트
+      setProfile({
+        ...profile,
+        username: updatedProfile.username.toLowerCase(),
+        profile_message: updatedProfile.message,
+        profile_image_url: profileImageUrl,
+      });
+
+      setIsModalOpen(false);
+      alert("프로필이 성공적으로 업데이트되었습니다.");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("프로필 업데이트 중 오류가 발생했습니다.");
+    }
   };
+
+  // Data URL을 File 객체로 변환하는 함수
+  function dataURLtoFile(dataurl, filename) {
+    var arr = dataurl.split(","),
+      mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]),
+      n = bstr.length,
+      u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

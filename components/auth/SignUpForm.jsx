@@ -31,7 +31,7 @@ export default function SignUpForm() {
       const { data: existingUser, error: checkError } = await supabase
         .from("user")
         .select("id")
-        .eq("username", data.username)
+        .eq("username", data.username.toLowerCase())
         .maybeSingle();
 
       if (checkError) {
@@ -70,7 +70,7 @@ export default function SignUpForm() {
         password: data.password,
         options: {
           data: {
-            username: data.username,
+            username: data.username.toLowerCase(),
             profile_image_url: profileImageUrl, // 항상 값이 있음 (기본 이미지 또는 업로드된 이미지)
             profile_message: data.profile_message,
           },
