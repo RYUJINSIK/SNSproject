@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
@@ -6,14 +6,29 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import ProfileEditModal from "./ProfileEditModal";
+import FollowModal from "./FollowModal";
 import { supabase } from "@/lib/supabase";
+import { useUserStore } from "@/store/useUserStore";
 
 const UserProfile = ({ profileData, posts, isOwnProfile }) => {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFollowersModalOpen, setIsFollowersModalOpen] = useState(false);
+  const [isFollowingModalOpen, setIsFollowingModalOpen] = useState(false);
   const [profile, setProfile] = useState(profileData);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const currentUser = useUserStore((state) => state.userData);
 
   if (!profile) return null;
+
+  useEffect(() => {
+    if (currentUser && !isOwnProfile) {
+      checkFollowStatus();
+    }
+    fetchFollowCounts();
+  }, [currentUser, profile.id]);
 
   const handlePostClick = (postId) => {
     router.push(`/posts/${postId}`);
@@ -91,6 +106,110 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
     return new File([u8arr], filename, { type: mime });
   }
 
+  const checkFollowStatus = async () => {
+    const { data, error } = await supabase
+      .from("follows")
+      .select()
+      .eq("follower_id", currentUser.id)
+      .eq("following_id", profile.id)
+      .single();
+
+    if (error) {
+      console.error("Error checking follow status:", error);
+    } else {
+      setIsFollowing(!!data);
+    }
+  };
+
+  const fetchFollowCounts = async () => {
+    const { data: followersData, error: followersError } = await supabase
+      .from("follows")
+      .select("follower_id")
+      .eq("following_id", profile.id);
+
+    const { data: followingData, error: followingError } = await supabase
+      .from("follows")
+      .select("following_id")
+      .eq("follower_id", profile.id);
+
+    if (followersError || followingError) {
+      console.error(
+        "Error fetching follow counts:",
+        followersError || followingError
+      );
+    } else {
+      setProfile((prev) => ({
+        ...prev,
+        followers_count: followersData.length,
+        following_count: followingData.length,
+      }));
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!currentUser) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("follows")
+      .upsert(
+        { follower_id: currentUser.id, following_id: profile.id },
+        { onConflict: ["follower_id", "following_id"] }
+      );
+
+    if (error) {
+      console.error("Error following user:", error);
+    } else {
+      setIsFollowing(true);
+      fetchFollowCounts();
+    }
+  };
+
+  const handleUnfollow = async () => {
+    const { data, error } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", currentUser.id)
+      .eq("following_id", profile.id);
+
+    if (error) {
+      console.error("Error unfollowing user:", error);
+    } else {
+      setIsFollowing(false);
+      fetchFollowCounts();
+    }
+  };
+
+  const fetchFollowers = async () => {
+    const { data, error } = await supabase
+      .from("follows")
+      .select("follower_id, user:follower_id(username, profile_image_url)")
+      .eq("following_id", profile.id);
+
+    if (error) {
+      console.error("Error fetching followers:", error);
+    } else {
+      setFollowers(data.map((item) => item.user));
+      setIsFollowersModalOpen(true);
+    }
+  };
+
+  const fetchFollowing = async () => {
+    const { data, error } = await supabase
+      .from("follows")
+      .select("following_id, user:following_id(username, profile_image_url)")
+      .eq("follower_id", profile.id);
+
+    if (error) {
+      console.error("Error fetching following:", error);
+    } else {
+      setFollowing(data.map((item) => item.user));
+      setIsFollowingModalOpen(true);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Card className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -98,17 +217,17 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
           <div className="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-6">
             <Avatar className="w-24 h-24 md:w-32 md:h-32 border-2 border-gray-200">
               <AvatarImage
-                src={profileData.profile_image_url}
-                alt={profileData.username}
+                src={profile.profile_image_url}
+                alt={profile.username}
               />
-              <AvatarFallback>{profileData.username[0]}</AvatarFallback>
+              <AvatarFallback>{profile.username[0]}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-xl mr-5">
-                  {profileData.username}
+                  {profile.username}
                 </h3>
-                {isOwnProfile && (
+                {isOwnProfile ? (
                   <Button
                     variant="outline"
                     size="sm"
@@ -117,6 +236,17 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
                   >
                     프로필 수정
                   </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={
+                      isFollowing ? "bg-gray-200" : "bg-[#91684A] text-white"
+                    }
+                    onClick={isFollowing ? handleUnfollow : handleFollow}
+                  >
+                    {isFollowing ? "팔로잉 취소" : "팔로우"}
+                  </Button>
                 )}
               </div>
               <div className="flex items-center space-x-4 mb-4 text-sm">
@@ -124,22 +254,22 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
                   <span className="font-semibold">{posts.length}</span>{" "}
                   <span className="text-gray-500">게시물</span>
                 </div>
-                <div>
+                <div className="cursor-pointer" onClick={fetchFollowers}>
                   <span className="font-semibold">
-                    {profileData.followers_count}0
+                    {profile.followers_count}
                   </span>{" "}
                   <span className="text-gray-500">팔로워</span>
                 </div>
-                <div>
+                <div className="cursor-pointer" onClick={fetchFollowing}>
                   <span className="font-semibold">
-                    {profileData.following_count}0
+                    {profile.following_count}
                   </span>{" "}
                   <span className="text-gray-500">팔로잉</span>
                 </div>
               </div>
               <div>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                  {profileData.profile_message}
+                  {profile.profile_message}
                 </p>
               </div>
             </div>
@@ -172,6 +302,18 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
           onClose={() => setIsModalOpen(false)}
           profileData={profile}
           onSave={handleSaveProfile}
+        />
+        <FollowModal
+          isOpen={isFollowersModalOpen}
+          onClose={() => setIsFollowersModalOpen(false)}
+          users={followers}
+          title="팔로워"
+        />
+        <FollowModal
+          isOpen={isFollowingModalOpen}
+          onClose={() => setIsFollowingModalOpen(false)}
+          users={following}
+          title="팔로잉"
         />
       </div>
     </div>
