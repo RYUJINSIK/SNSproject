@@ -110,7 +110,7 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
     const { data, error } = await supabase
       .from("follows")
       .select()
-      .eq("follower_id", currentUser.id)
+      .eq("follower_id", currentUser.sub)
       .eq("following_id", profile.id)
       .single();
 
@@ -155,7 +155,7 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
     const { data, error } = await supabase
       .from("follows")
       .upsert(
-        { follower_id: currentUser.id, following_id: profile.id },
+        { follower_id: currentUser.sub, following_id: profile.id },
         { onConflict: ["follower_id", "following_id"] }
       );
 
@@ -171,7 +171,7 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
     const { data, error } = await supabase
       .from("follows")
       .delete()
-      .eq("follower_id", currentUser.id)
+      .eq("follower_id", currentUser.sub)
       .eq("following_id", profile.id);
 
     if (error) {
