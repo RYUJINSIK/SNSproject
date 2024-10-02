@@ -210,6 +210,10 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
     }
   };
 
+  const handleSendMessage = () => {
+    router.push(`/chat/${profileData.id}`);
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <Card className="bg-white shadow-md rounded-lg overflow-hidden">
@@ -246,6 +250,12 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
                     onClick={isFollowing ? handleUnfollow : handleFollow}
                   >
                     {isFollowing ? "팔로잉 취소" : "팔로우"}
+                  </Button>
+                )}
+
+                {!isOwnProfile && (
+                  <Button onClick={handleSendMessage} className="mt-4">
+                    메시지 보내기
                   </Button>
                 )}
               </div>
