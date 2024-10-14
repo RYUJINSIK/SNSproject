@@ -211,7 +211,7 @@ const UserProfile = ({ profileData, posts, isOwnProfile }) => {
   };
 
   const handleSendMessage = () => {
-    router.push(`/chat/${profileData.id}`);
+    router.push(`/chat/${profile.id}`);
   };
 
   return (

@@ -24,6 +24,8 @@ const MessageComponent = ({ receiverId }) => {
   }, [receiverId]);
 
   const fetchMessages = async () => {
+    console.log("currentUser.id : ", currentUser.id);
+    console.log("receiverId : ", receiverId);
     const { data, error } = await supabase
       .from("messages")
       .select("*")

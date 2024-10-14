@@ -1,9 +1,10 @@
-import { useRouter } from "next/router";
+"use client";
+import { useParams } from "next/navigation";
 import MessageComponent from "@/components/MessageComponent";
 
 const ChatPage = () => {
-  const router = useRouter();
-  const { id } = router.query;
+  const params = useParams();
+  const id = params.id;
 
   if (!id) return <div>Loading...</div>;
 
