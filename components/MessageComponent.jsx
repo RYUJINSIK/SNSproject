@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useUserStore } from "@/store/useUserStore";
 
@@ -6,31 +6,16 @@ const MessageComponent = ({ receiverId }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const currentUser = useUserStore((state) => state.userData);
+  const messagesEndRef = useRef(null);
 
-  useEffect(() => {
-    fetchMessages();
-    const subscription = supabase
-      .channel("messages")
-      .on(
-        "INSERT",
-        { event: "*", schema: "public", table: "messages" },
-        handleNewMessage
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [receiverId]);
-
-  const fetchMessages = async () => {
-    console.log("currentUser.id : ", currentUser.id);
-    console.log("receiverId : ", receiverId);
+  // 메시지 불러오는 함수
+  const fetchMessages = useCallback(async () => {
     const { data, error } = await supabase
       .from("messages")
       .select("*")
-      .or(`sender_id.eq.${currentUser.id},receiver_id.eq.${currentUser.id}`)
-      .or(`sender_id.eq.${receiverId},receiver_id.eq.${receiverId}`)
+      .or(
+        `and(sender_id.eq.${currentUser.sub},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUser.sub})`
+      )
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -38,45 +23,85 @@ const MessageComponent = ({ receiverId }) => {
     } else {
       setMessages(data);
     }
-  };
+  }, [currentUser.sub, receiverId]);
 
-  const handleNewMessage = (payload) => {
-    const newMessage = payload.new;
-    if (
-      (newMessage.sender_id === currentUser.id &&
-        newMessage.receiver_id === receiverId) ||
-      (newMessage.sender_id === receiverId &&
-        newMessage.receiver_id === currentUser.id)
-    ) {
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
-    }
-  };
+  // 실시간 메시지 구독 설정
+  useEffect(() => {
+    fetchMessages();
 
+    const channel = supabase
+      .channel("public:messages")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          condition: `sender_id=eq.${currentUser.sub} AND receiver_id=eq.${receiverId} OR sender_id=eq.${receiverId} AND receiver_id=eq.${currentUser.sub}`,
+        },
+        (payload) => {
+          console.log("New message received:", payload);
+
+          // 중복된 메시지 확인 후 추가
+          setMessages((prevMessages) => {
+            if (!prevMessages.some((msg) => msg.id === payload.new.id)) {
+              return [...prevMessages, payload.new];
+            }
+            return prevMessages;
+          });
+        }
+      )
+      .subscribe((status, err) => {
+        console.log("Subscription status:", status);
+        if (err) console.error("Subscription error:", err);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser.sub, receiverId, fetchMessages]);
+
+  // 메시지 창 스크롤 자동 이동
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // 메시지 전송 처리
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    const { data, error } = await supabase.from("messages").insert({
-      sender_id: currentUser.id,
+    const newMessageObj = {
+      sender_id: currentUser.sub,
       receiver_id: receiverId,
       content: newMessage,
-    });
+      created_at: new Date().toISOString(),
+    };
+
+    setNewMessage("");
+
+    // Supabase에 메시지 저장 (UI에서 즉시 추가하지 않음)
+    const { data, error } = await supabase
+      .from("messages")
+      .insert(newMessageObj)
+      .select();
 
     if (error) {
       console.error("Error sending message:", error);
     } else {
-      setNewMessage("");
+      // 저장된 메시지만 UI에 추가
+      setMessages((prevMessages) => [...prevMessages, data[0]]);
     }
   };
 
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {messages.map((message, index) => (
           <div
-            key={message.id}
+            key={message.id || index}
             className={`p-2 rounded-lg ${
-              message.sender_id === currentUser.id
+              message.sender_id === currentUser.sub
                 ? "bg-blue-500 text-white self-end"
                 : "bg-gray-200 self-start"
             }`}
@@ -84,6 +109,7 @@ const MessageComponent = ({ receiverId }) => {
             {message.content}
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       <form onSubmit={sendMessage} className="p-4 border-t">
         <div className="flex space-x-2">

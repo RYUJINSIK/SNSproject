@@ -47,7 +47,6 @@ export const useLike = (postId) => {
   const toggleLike = async () => {
     if (!userData) return;
 
-    // Optimistic update
     setIsLiked((prev) => !prev);
     setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
 
@@ -65,7 +64,6 @@ export const useLike = (postId) => {
       }
     } catch (error) {
       console.error("Error toggling like:", error);
-      // Revert optimistic update if there's an error
       setIsLiked((prev) => !prev);
       setLikeCount((prev) => (isLiked ? prev + 1 : prev - 1));
     }
