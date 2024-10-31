@@ -65,10 +65,6 @@
 <div markdown="1">
 <h4>💡 피드를 구경하며 댓글로 소통 가능</h4>
 <img src="https://github.com/user-attachments/assets/b93e55c3-9545-468d-b720-abb6e9a8d6f5" >
-<ul>
-<li>1️⃣ 낙관적 업데이트</li>
-<p>- 사용자경험 개선을 위해 좋아요 기능에 낙관적 업데이트 적용<p>
-</ul>
 </div>
 </details>
 
