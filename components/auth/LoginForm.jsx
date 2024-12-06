@@ -30,7 +30,8 @@ export default function LoginForm() {
     });
 
     if (error) {
-      setError(error.message);
+      if (error.message === "Invalid login credentials")
+        setError("등록되지 않은 이메일 혹은 비밀번호를 잘못 입력했습니다.");
     } else {
       setToken(data.session.access_token);
       setUserData(data.user.user_metadata);
