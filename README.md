@@ -118,4 +118,97 @@
 - Package Manager : yarn
 - UI Library : Tailwind CSS
 
+### 🧨 트러블 슈팅
+
+
+<details>  
+
+<summary>🧨 불필요한 API 호출에 따른 최적화</summary>
+ 
+<div markdown="1">
+
+<h4>❓문제 상황 </h4>
+
+<p>마이페이지 - 프로필수정 기능중 닉네임 입력시 한글자씩 입력할때마다 중복체크를 수행하고 중복체크통과(중복된 닉네임이 없음)시에는 쿼리결과가 0건이라 서비스상에 문제는 없지만 api호출 오류처럼 보이는 상황이 발생</p>
+
+<ul>
+
+<li>원인</li>
+
+<p>- 닉네임 입력시 연결해둔 함수에서 계속해서 중복체크(supabase database 조회) 수행</p>
+
+<p>- 기능상에 문제는 없으나 불필요한 호출이 많아 최적화가 필요하다고 판단</p>
+
+<li>해결 방법</li>
+
+<p>- lodash/debounce를 사용하여 checkUsernameAvailability 함수를 디바운스 처리. 이렇게 하면 사용자가 타이핑을 멈춘 후 500ms 후에만 실제 체크가 이루어짐.</p>
+
+<p>1. 닉네임이 3자 미만일 경우 데이터베이스 조회를 하지 않고 바로 사용 불가능으로 처리.</p>
+
+<p>2. 현재 사용자의 닉네임과 동일한 경우 체크를 스킵.</p>
+
+<p>3. 사용자에게 더 자세한 피드백을 제공 (닉네임 길이가 부족한 경우 등).</p>
+
+<details>
+
+<summary>관련 코드</summary>
+
+<b>Before</b>
+```jsx
+
+  const checkUsernameAvailability = async () => {
+    if (username === profileData.username) return;
+  
+    setIsChecking(true);
+    const { data, error } = await supabase
+      .from("user")
+      .select("username")
+      .eq("username", username)
+      .neq("email", profileData.email)
+      .single();
+  
+    setIsUsernameAvailable(!data);
+    setIsChecking(false);
+  };
+
+```
+<b>After</b>
+```jsx
+
+  const checkUsernameAvailability = useCallback(
+    debounce(async (newUsername) => {
+      if (newUsername === profileData.username) {
+        setIsUsernameAvailable(true);
+        return;
+      }
+
+      if (newUsername.length < 3) {
+        setIsUsernameAvailable(false);
+        return;
+      }
+
+      setIsChecking(true);
+      const { data, error } = await supabase
+        .from("user")
+        .select("username")
+        .eq("username", newUsername)
+        .neq("email", profileData.email)
+        .single();
+
+      setIsUsernameAvailable(!data);
+      setIsChecking(false);
+    }, 500),
+    [profileData.username, profileData.email]
+  );
+
+```
+
+</details>
+ 
+</ul>
+ 
+</div>
+ 
+</details>
+
 ---
