@@ -96,6 +96,195 @@
 </div>
 </details>
 
+### 🧑🏻‍💻 E2E 테스트 적용
+<details>
+
+<summary>🧪 회원가입 페이지 테스트 </summary>
+
+<div markdown="1">
+
+<h4>🎬 테스트 시나리오 </h4>
+
+<p>초기 상태: 로그인 페이지에 접속.</p>
+
+<p>1. 회원가입 성공 (API Mocking)</p>
+
+1. 이메일, 비밀번호, 비밀번호 확인, 닉네임, 프로필 메시지 입력란에 유효한 값 입력.
+2. Mock API를 통해 회원가입 요청가로채기.
+3. 요청이  성공 응답을 반환하면 로그인 페이지로 리다이렉트.
+4. 요청의 `body` 데이터 확인: 올바른 이메일전달 여부.
+
+<p>2. 중복된 닉네임으로 회원가입 실패 (API Mocking)</p>
+
+1. 이메일, 비밀번호, 비밀번호 확인, 닉네임 입력란에 중복된 닉네임 입력.
+2. Mock API를 통해 회원가입 요청 실패 응답 반환.
+3. 응답 데이터에 포함된 에러 메시지 표시 확인: "이미 사용 중인 닉네임입니다."
+
+<p>3. 비밀번호 불일치로 회원가입 실패 (클라이언트 검증)</p>
+
+1. 이메일, 비밀번호, 비밀번호 확인, 닉네임 입력란에 유효한 값을 입력하되, 비밀번호와 비밀번호 확인 불일치 입력.
+2. 폼 제출 시 클라이언트 검증 로직 동작.
+3. 사용자에게 에러 메시지 표시: "비밀번호가 일치하지 않습니다."
+
+<details>
+
+<summary>테스트 코드 / 테스트 수행화면</summary>
+
+```jsx
+describe("회원가입 페이지 테스트 (API Mocking)", () => {
+  beforeEach(() => {
+    // 회원가입 페이지로 이동
+    cy.visit("/signup");
+  });
+
+  it("회원가입 성공 (Mocked API)", () => {
+    // 회원가입 요청을 가로채고 성공 응답을 반환
+    cy.intercept("POST", "/auth/v1/signup", {
+      statusCode: 200,
+      body: {
+        user: { id: "12345", email: "testuser@example.com" },
+        session: { access_token: "mocked_token" },
+      },
+    }).as("signUpRequest");
+
+    // 유효한 데이터 입력
+    cy.get("#email").type("testuser@example.com");
+    cy.get("#password").type("ValidPassword123!");
+    cy.get("#confirmPassword").type("ValidPassword123!");
+    cy.get("#username").type("testuser");
+    cy.get("#profile_message").type("안녕하세요! 저는 테스트 사용자입니다.");
+
+    // 폼 제출
+    cy.get('button[type="submit"]').click();
+
+    // 요청이 올바르게 전송되었는지 확인
+    cy.wait("@signUpRequest")
+      .its("request.body")
+      .should((body) => {
+        expect(body.email).to.equal("testuser@example.com");
+      });
+
+    // 성공적으로 로그인 페이지로 리다이렉트 확인
+    cy.url().should("include", "/login");
+  });
+
+  it("중복된 닉네임으로 회원가입 실패 (Mocked API)", () => {
+    // 닉네임 중복 체크 요청을 가로채고 실패 응답 반환
+    cy.intercept("POST", "/auth/v1/signup", {
+      statusCode: 200,
+      body: { error: { message: "이미 사용 중인 닉네임입니다." } },
+    }).as("signUpRequest");
+
+    // 중복된 닉네임 입력
+    cy.get("#email").type("anotheruser@example.com");
+    cy.get("#password").type("AnotherPassword123!");
+    cy.get("#confirmPassword").type("AnotherPassword123!");
+    cy.get("#username").type("usertest");
+
+    // 폼 제출
+    cy.get('button[type="submit"]').click();
+
+    // 오류 메시지 확인
+    cy.contains("이미 사용 중인 닉네임입니다.").should("be.visible");
+  });
+
+  it("비밀번호 불일치로 회원가입 실패 (클라이언트 사이드 검증)", () => {
+    // 비밀번호와 비밀번호 확인 불일치 입력
+    cy.get("#email").type("mismatch@example.com");
+    cy.get("#password").type("MismatchPassword123!");
+    cy.get("#confirmPassword").type("DifferentPassword123!");
+    cy.get("#username").type("mismatchuser");
+
+    // 폼 제출
+    cy.get('button[type="submit"]').click();
+
+    // 클라이언트 측 오류 메시지 확인
+    cy.contains("비밀번호가 일치하지 않습니다.").should("be.visible");
+  });
+});
+
+```
+
+![회원가입테스트gif](https://github.com/user-attachments/assets/d8fc57bf-d1d7-4a80-917d-220b6ebd4660)
+
+</details>
+
+</ul>
+
+</div>
+
+</details>
+
+<details>
+
+<summary>🧪 로그인 페이지 테스트 </summary>
+
+<div markdown="1">
+
+<h4>🎬 테스트 시나리오 </h4>
+
+<p>초기 상태: 로그인 페이지에 접속.</p>
+
+<p>1. 정상적인 이메일과 비밀번호로 로그인 성공</p>
+
+1. 이메일 입력란에 유효한 이메일 입력.
+2. 비밀번호 입력란에 올바른 비밀번호 입력.
+3. 로그인 버튼 클릭.
+4. 요청이 성공하면 홈 화면으로 리다이렉트.
+5. URL 확인 및 홈 화면에서 주요 요소 표시 여부 확인.
+
+<details>
+
+<summary>테스트 코드 / 테스트 수행화면</summary>
+
+```jsx
+describe("로그인 페이지 테스트", () => {
+  beforeEach(() => {
+    cy.visit("/login"); // 로그인 페이지로 이동
+  });
+
+  it("정상적인 이메일과 비밀번호로 로그인 성공", () => {
+    // 이메일 입력
+    cy.get("#email").type("petopia@test.com");
+
+    // 비밀번호 입력
+    cy.get("#password").type("!@wlstlr95");
+
+    // 로그인 버튼 클릭
+    cy.get('button[type="submit"]').click();
+
+    // 홈 페이지로 리다이렉트 확인 (예: "/")
+    cy.url().should("eq", `${Cypress.config().baseUrl}/`);
+  });
+
+  it("잘못된 이메일 또는 비밀번호로 로그인 실패", () => {
+    // 이메일 입력
+    cy.get("#email").type("wrong@example.com");
+
+    // 비밀번호 입력
+    cy.get("#password").type("wrongpassword");
+
+    // 로그인 버튼 클릭
+    cy.get('button[type="submit"]').click();
+
+    // 에러 메시지 확인
+    cy.contains(
+      "등록되지 않은 이메일 혹은 비밀번호를 잘못 입력했습니다."
+    ).should("be.visible");
+  });
+});
+```
+
+![로그인테스트gif](https://github.com/user-attachments/assets/ca18dc32-20fe-46f7-82aa-7edb7936b66c)
+
+</details>
+
+</ul>
+
+</div>
+
+</details>
+
 ---
 
 ### 🧙 기술적 의사결정
