@@ -22,6 +22,7 @@
 <summary>👥 [사용자] 회원 가입</summary>
 <div markdown="1">
 <h4>💡 서비스 이용을 위한 사용자 회원가입</h4>
+<p> Supabase Authentication을 활용하여 이메일 및 비밀번호 기반 회원 가입 구현. 회원 정보는 PostgreSQL 데이터베이스에 저장되며, API 호출 시 유효성 검사를 수행. </p>
 <img src="https://github.com/user-attachments/assets/d80f3c95-e339-499a-af30-9a42cdf37a2f" width="80%">
 </div>
 </details>
@@ -30,6 +31,7 @@
 <summary>🔐 [사용자] 로그인 / 로그아웃</summary>
 <div markdown="1">
 <h4>💡 Supabase Authentication를 사용한 로그인</h4>
+<p> Supabase Authentication으로 로그인 시 JWT 토큰이 발행되며, Zustand를 사용해 상태 관리. 클라이언트는 토큰을 활용해 인증된 요청 수행. </p>
 <img src="https://github.com/user-attachments/assets/117a6e94-78f6-4450-afcb-4ef0cd31b513" >
 <ul>
 <li>1️⃣ 회원가입시 작성한 이메일, 패스워드로 로그인 </li>
@@ -43,6 +45,7 @@
 <summary>🪪 [사용자] 게시글 작성 , 수정</summary>
 <div markdown="1">
 <h4>💡 로그인 한 회원은 SNS 피드 글 작성 및 수정가능</h4>
+<p> 로그인된 사용자가 게시글을 작성하고 수정 가능. Next.js API Route를 통해 서버와 통신하며, Supabase를 이용해 데이터 저장 및 업데이트 처리. </p>
 <img src="https://github.com/user-attachments/assets/9bd80f4a-5e5e-4536-b93b-a597ce92d4d2" >
 <img src="https://github.com/user-attachments/assets/86ee4984-b792-41e8-8102-f66035f4c848" >
 </div>
@@ -52,6 +55,7 @@
 <summary>❤️ 게시글 좋아요기능</summary>
 <div markdown="1">
 <h4>💡 다른사람이 올린 피드를 구경하며 좋아요 가능</h4>
+<p> 좋아요 클릭 시 낙관적 업데이트(Optimistic Update) 적용으로 사용자 경험 향상. 상태 변경은 클라이언트에서 즉시 반영되며, 이후 서버 동기화. </p>
 <img src="https://github.com/user-attachments/assets/b0f26587-24f2-4b71-82ac-b4be6a578539" >
 <ul>
 <li>1️⃣ 낙관적 업데이트</li>
@@ -72,6 +76,7 @@
 <summary>🛠️ 프로필 수정기능</summary>
 <div markdown="1">
 <h4>💡 사용자 프로필 수정기능</h4>
+<p> 사용자 프로필(닉네임, 소개글 등) 수정 가능. Lodash의 Debounce를 사용해 불필요한 API 호출 최소화. </p>
 <img src="https://github.com/user-attachments/assets/f9cdd427-520a-4cf1-a291-a3b0d0349a87" width="80%">
 <ul>
 <li>1️⃣ 개인정보 수정</li>
@@ -84,6 +89,7 @@
 <summary>👍 팔로우 & 팔로잉기능</summary>
 <div markdown="1">
 <h4>💡 유저간 관계를 맺기 위한 팔로우 & 팔로잉 기능</h4>
+<p> 사용자 간 관계 설정을 위한 팔로우/팔로잉 기능 구현. 관계형 데이터베이스(PostgreSQL)를 활용해 효율적인 데이터 관리. </p>
 <img src="https://github.com/user-attachments/assets/50caf4ce-1433-4bae-bfa6-e97aee1e302a" width="80%">
 </div>
 </details>
@@ -92,6 +98,7 @@
 <summary>💬 채팅기능</summary>
 <div markdown="1">
 <h4>💡 관계를 맺은 사이에 가능한 실시간 채팅기능</h4>
+<p> 관계를 맺은 사용자 간 실시간 채팅 가능. Supabase Realtime을 사용하여 메시지 송수신 상태를 실시간으로 반영. </p>
 <img src="https://github.com/user-attachments/assets/0457c4c6-a64f-4442-bb74-3110d2679c15">
 </div>
 </details>
